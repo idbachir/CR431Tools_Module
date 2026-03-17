@@ -19,10 +19,14 @@ et leur FQDN en utilisant les données du journal Pi‑Hole fourni.
   * Exécuter la commande : Show-ModuleParameters, pour afficher les différentes commandes et leurs paramètres respectifs.
 
 # Premier essai du module.
-- Télécharger les deux fichiers "fw.log" et "pihole.log" et les placer dans le répertoire "C:\CR431-Logs" (CR431-Logs doit être créé).
+- Placer les deux fichiers "fw.log" et "pihole.log" dans le répertoire "C:\CR431-Logs" (CR431-Logs doit être créé s'il n'existe pas).
 - exécuter la commande : Invoke-FwFullProcess pour lancer le traitement complet.
 - Il est possible d'exécuter le traitement par parties séparées, les commandes sont les suivantes :
   * Convert-FwLogToTable -Avec ou sans paramètres.
   * Get-FwDataCols -Avec ou sans paramètres.
   * Find-FwIpFqdn -Avec ou sans paramètres.
 - Les fichiers CSV générés seront déposés au fur et à mesure dans "C:\CR431-Logs".
+  
+# Bonus
+**Le fichier CSV dans lequel figure les adresses IP avec leurs FQDN correspondants possède une colonne supplémentaire énumérant le nombre d'occurence 
+d'une adresse IP et le fichier est classé par ordre décroissant du nombre d'occurences**
