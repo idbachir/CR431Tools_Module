@@ -18,6 +18,8 @@ C:\Program Files\PowerShell\7\Modules\CR431Tools
 Placez-y les deux fichiers téléchargés.
 **3. Ajouter le chemin au PSModulePath**
 Ouvrez PowerShell en administrateur, puis taper la commande suivante :
+$env:PSModulePath -split ';' pour s'assurer que le path du module est disponible.
+si ce n'est pas le cas, taper la commande suivante:
 notepad $PROFILE
 Ajoutez la ligne suivante :
 $env:PSModulePath += ";C:\Program Files\PowerShell\7\Modules\CR431Tools"
