@@ -14,8 +14,8 @@
                   - Get-FwDataCols    : Extrait les colonnes pertinentes.
                   - Find-FwIpFqdn        : Associe IP → FQDN via Pi-hole.
 				  - Invoke-FwFullProcess    : Exécuter tout le processus au complet.
-	Auteurs     : 
-	Date 		: 2026-03-15
+	Auteurs     : Malika Saidani, Idir Ait Bachir
+	Date 		: 2026-03-25
 #>
 
 # -------------------------------------------------------------------
@@ -38,18 +38,14 @@ function Convert-FwLogToTable {
 	
 	# Vérifier si le fichier log existe
 	if (-not (Test-Path $SrcPath)) {
-		Write-Host "Le fichier $SrcPath n'existe pas. Arrêt de traitement" -ForegroundColor Red
+		Write-Host "Le fichier '$SrcPath' n'existe pas. Arrêt de traitement" -ForegroundColor Red
 		exit 1 # Message de sortie avec code d'erreur pour éviter à ce que le terminal ferme
 	}
 	else {
     Write-Host "Début de traitement..." -ForegroundColor Green
+	Write-Host "Lecture du fichier : '$SrcPath'..." -ForegroundColor Cyan
 	}
 	
-    # Affichage optionnel
-    if ($VerboseOutput) {
-        Write-Host "Lecture du fichier : $SrcPath"
-    }
-
     # ---------------------------------------------------------------
     # DO / WHILE : attendre que le fichier soit lisible et non vide
     # ---------------------------------------------------------------
@@ -58,12 +54,12 @@ function Convert-FwLogToTable {
         $lines = Get-Content -Path $SrcPath -ErrorAction Stop
     }
     catch {
-        Write-Host "Impossible de lire le fichier. Arrêt du traitement." -ForegroundColor Magenta
+        Write-Host "Impossible de lire le fichier '$SrcPath'. Arrêt du traitement." -ForegroundColor Magenta
         exit 1 # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
     }
 
     if (-not $lines -or $lines.Count -eq 0) {
-        Write-Host "Fichier vide. Arrêt du traitement." -ForegroundColor Magenta
+        Write-Host "Fichier '$SrcPath' vide. Arrêt du traitement." -ForegroundColor Magenta
         exit 1 # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
     }
 
@@ -114,7 +110,7 @@ function Convert-FwLogToTable {
         Write-Host "CSV généré : $OutputCsv" -ForegroundColor Yellow
     }
     catch {
-        Write-Error "Erreur lors de l'export CSV : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Erreur lors de l'export CSV : $($_.Exception.Message)" -ForegroundColor Red
     }
 }	
 
@@ -126,10 +122,10 @@ function Get-FwDataCols {
 
     [CmdletBinding()]
     param(
-        # CSV source complet
+        # CSV source complet généré par la fonction précédente
         [string]$InputPath = "C:\CR431-Logs\1_fw_parsed.csv",
 
-        # CSV filtré
+        # CSV filtré à générer
         [string]$OutputPath = "C:\CR431-Logs\2_fw_parsed_filtered.csv"
     )
 
@@ -143,14 +139,14 @@ function Get-FwDataCols {
 	}
 
     # ---------------------------------------------------------------
-    # TRY/CATCH : lecture du CSV
+    # TRY/CATCH : lecture du CSV généré par la fonction précédente
     # ---------------------------------------------------------------
     try {
         $data = Import-Csv -Path $InputPath -ErrorAction Stop
     }
     catch {
-        Write-Error "Erreur de lecture CSV : $($_.Exception.Message)" -ForegroundColor Red
-        return
+        Write-Host "Erreur de lecture CSV : $($_.Exception.Message)" -ForegroundColor Red
+        exit 1   # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
     }
 
     # Vérifie la présence des colonnes attendues
@@ -169,45 +165,47 @@ function Get-FwDataCols {
             Select-Object src_ip, dst_ip, dst_port, user_name, fw_rule_name |
             Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
 
-        Write-Host "Fichier généré : $OutputPath" -ForegroundColor Yellow
+        Write-Host "Fichier généré : '$OutputPath'" -ForegroundColor Yellow
     }
     catch {
-        Write-Error "Erreur lors de l'export : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Erreur lors de l'export : $($_.Exception.Message)" -ForegroundColor Red
+		exit 1   # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
     }
 }
 
 # -------------------------------------------------------------------
 # 3. Find-FwIpFqdn
-#    Associe les IP firewall, du fichier csv généré par la fonction : 2. Get-FwDataCols, aux FQDN trouvés dans Pi-hole.
+#    Associe les IP firewall, du fichier csv généré par la fonction : 
+#    2. Get-FwDataCols, aux FQDN trouvés dans Pi-hole.
 # -------------------------------------------------------------------
 function Find-FwIpFqdn {
 
     [CmdletBinding()]
     param(
-        # CSV firewall filtré
+        # CSV firewall filtré généré par la seconde fonction
         [string]$FilteredCsv = "C:\CR431-Logs\2_fw_parsed_filtered.csv",
 
         # Log Pi-hole
         [string]$PiholeLog   = "C:\CR431-Logs\pihole.log",
 
-        # CSV final
+        # CSV final à générer
         [string]$FinalCsv   = "C:\CR431-Logs\3_fw_ip_fqdn_stats.csv"
     )
 	
 	# Vérifier l'existence des deux fichiers
 	if (-not (Test-Path $FilteredCsv)) {
 		Write-Host "Le fichier '$FilteredCsv' est introuvable." -ForegroundColor Red
-		return
+		exit 1   # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
 	}
 	elseif (-not (Test-Path $PiholeLog)) {
 		Write-Host "Le fichier '$PiholeLog' est introuvable." -ForegroundColor Red
-		return
+		exit 1   # quitte le script avec un code d’erreur pour éviter la fermeture du terminal
 	}
 	else {
 		Write-Host "Le traitement se poursuit..." -ForegroundColor Green
 	}
 
-    Write-Host "Lecture du fichier Pi-Hole..." -ForegroundColor Cyan
+    Write-Host "Lecture du fichier : '$PiholeLog'..." -ForegroundColor Cyan
 
     # Table de correspondance IP → FQDN
     $dnsMap = @{}
@@ -219,7 +217,7 @@ function Find-FwIpFqdn {
         $piholeLines = Get-Content $PiholeLog -ErrorAction Stop
     }
     catch {
-        Write-Error "Impossible de lire le log Pi-hole : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Impossible de lire le log Pi-hole : $($_.Exception.Message)" -ForegroundColor Red
         exit 1 # quitte le script avec un code d’erreur
     }
 
@@ -231,14 +229,14 @@ function Find-FwIpFqdn {
     }
 
     # ---------------------------------------------------------------
-    # TRY/CATCH : lecture du CSV firewall
+    # TRY/CATCH : lecture du CSV firewall généré par la seconde fonction
     # ---------------------------------------------------------------
     try {
         $fwData = Import-Csv $FilteredCsv -ErrorAction Stop
     }
     catch {
-        Write-Error "Impossible de lire le CSV firewall : $($_.Exception.Message)" -ForegroundColor Red
-        return
+        Write-Host "Impossible de lire le CSV firewall : $($_.Exception.Message)" -ForegroundColor Red
+        exit 1 # quitte le script avec un code d’erreur
     }
 
     # Groupement par IP destination
@@ -261,10 +259,11 @@ function Find-FwIpFqdn {
             Sort-Object -Property nbr_occur -Descending |
             Export-Csv $FinalCsv -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
 
-        Write-Host "Fichier généré : $FinalCsv" -ForegroundColor Yellow
+        Write-Host "Fichier généré : '$FinalCsv'" -ForegroundColor Yellow
     }
     catch {
-        Write-Error "Erreur lors de l'export final : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Erreur lors de l'export final : $($_.Exception.Message)" -ForegroundColor Red
+		exit 1 # quitte le script avec un code d’erreur
     }
 }
 
@@ -279,18 +278,23 @@ function Invoke-FwFullProcess {
 
     [CmdletBinding()]
     param(
-        # Dossiers et fichiers utilisés dans le pipeline
-        [string]$FwLogPath      = "C:\CR431-Logs\fw.log",
-        [string]$ParsedCsv      = "C:\CR431-Logs\1_fw_parsed.csv",
-        [string]$FilteredCsv    = "C:\CR431-Logs\2_fw_parsed_filtered.csv",
-        [string]$PiholeLog      = "C:\CR431-Logs\pihole.log",
-        [string]$FinalOutputCsv = "C:\CR431-Logs\3_fw_ip_fqdn_stats.csv",
+        # Dossiers et fichiers utilisés dans le traitement
+        [string]$InPath  = "C:\CR431-Logs",
+        [string]$OutPath = "C:\CR431-Logs",
 
         # Active l'affichage détaillé
         [switch]$VerboseOutput
     )
 
     Write-Host "=== DÉMARRAGE DU TRAITEMENT COMPLET ===" -ForegroundColor Cyan
+
+	# Construction des chemins
+    $FwLogPath      = Join-Path $InPath "fw.log"
+    $PiholeLog      = Join-Path $InPath "pihole.log"
+
+    $ParsedCsv      = Join-Path $OutPath "1_fw_parsed.csv"
+    $FilteredCsv    = Join-Path $OutPath "2_fw_parsed_filtered.csv"
+    $FinalOutputCsv = Join-Path $OutPath "3_fw_ip_fqdn_stats.csv"
 
     # 1. Conversion du log firewall → CSV structuré
     Convert-FwLogToTable -SrcPath $FwLogPath -OutputCsv $ParsedCsv -VerboseOutput:$VerboseOutput
@@ -302,7 +306,6 @@ function Invoke-FwFullProcess {
     Find-FwIpFqdn -FilteredCsv $FilteredCsv -PiholeLog $PiholeLog -FinalCsv $FinalOutputCsv
 
     Write-Host "=== TRAITEMENT TERMINÉ ===" -ForegroundColor Cyan
-    Write-Host "Résultat final : $FinalOutputCsv" -ForegroundColor Green
 }
 
 # -------------------------------------------------------------------
