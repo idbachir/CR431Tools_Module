@@ -6,7 +6,7 @@
     CompanyName       = 'N/A'
     Description       = 'Outils d’analyse des logs firewall et Pi-hole.'
     PowerShellVersion = '5.1'
-    # CreatedOn       = '2026-03-26'
+    # CreatedOn       = '2026-03-25'
 
     FunctionsToExport = @(
     'Convert-FwLogToTable',
@@ -18,5 +18,4 @@
 
     CmdletsToExport   = @()
     VariablesToExport = @()
-
 }
