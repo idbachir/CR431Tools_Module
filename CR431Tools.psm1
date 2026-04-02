@@ -32,8 +32,6 @@ function Convert-FwLogToTable {
         # Chemin du fichier CSV généré
         [string]$OutputCsv = "C:\CR431-Logs\1_fw_parsed.csv",
 
-        # Active l'affichage détaillé
-        [switch]$VerboseOutput
     )
 	
 	# Vérifier si le fichier log existe
@@ -282,8 +280,6 @@ function Invoke-FwFullProcess {
         [string]$InPath  = "C:\CR431-Logs",
         [string]$OutPath = "C:\CR431-Logs",
 
-        # Active l'affichage détaillé
-        [switch]$VerboseOutput
     )
 
     Write-Host "=== DÉMARRAGE DU TRAITEMENT COMPLET ===" -ForegroundColor Cyan
